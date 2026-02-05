@@ -87,23 +87,28 @@ See @sec-submission for details.
 ### Load Packages
 
 First, we load custom packages that have been developed for this class.
-If we're going to run into issues, it's likely here, hence the slightly complex package loading code
+These are installable Julia packages, but are not (yet) on the "registry" of Julia packages, so they need to be installed directly from GitHub.
+This motivates some slightly more complicated package-loading code.
 
 ```{julia}
 #| output: false
-import Pkg
-for url in [
-    "https://github.com/dossgollin-lab/ICOW.jl",
-    "https://github.com/dossgollin-lab/SimOptDecisions",
-]
-    pkg = replace(basename(url), ".jl" => "")
+# install SimOptDecisions and ICOW
+try
+    using SimOptDecisions
+    using ICOW
+catch
+    import Pkg
     try
-        Base.require(Main, Symbol(pkg))  # check if it actually loads
+        Pkg.rm("SimOptDecisions")
     catch
-        Pkg.add(; url)
     end
+    try
+        Pkg.rm("ICOW")
+    catch
+    end
+    Pkg.add(; url="https://github.com/dossgollin-lab/SimOptDecisions")
+    Pkg.add(; url="https://github.com/dossgollin-lab/ICOW.jl")
 end
-
 using SimOptDecisions
 using ICOW
 using ICOW.Stochastic
@@ -151,9 +156,15 @@ This is enough to stop smaller storms but can fail during larger ones — which 
 
 ```{julia}
 #| output: false
-baseline = StaticPolicy(
-    a_frac=0.15, w_frac=0.0, b_frac=0.0, r_frac=0.0, P=0.0
+baseline = StaticPolicy(;
+    a_frac=0.3,   # use 30% of city elevation as protection budget
+    w_frac=0.1,   # 10% of budget goes to withdrawal
+    b_frac=0.2,   # 20% of remaining budget goes to dike base
+    r_frac=0.1,   # resistance height = 10% of H_city
+    P=0.5,        # flood-proof 50% of buildings
 )
+fd = FloodDefenses(baseline, config)
+fd
 ```
 
 ## Stochastic Analysis: One Storm
@@ -377,8 +388,8 @@ Which one would you trust more for a policy decision, and why?*
 
 ## Experiments: Change Things and See What Happens
 
-Now it's your turn.
-Each experiment asks you to modify one parameter and observe the effect on risk.
+Each experiment changes one parameter and shows the effect on risk.
+Read the code, run it, and answer the questions.
 
 ### Experiment: Fat Tails
 
@@ -392,7 +403,14 @@ Let's see what happens when we increase it from 0.15 to 0.3.
 surge_dist_fat = GeneralizedExtremeValue(3.0, 1.0, 0.3)
 surges_fat = rand(surge_dist_fat, n_samples)
 
-# Your code here
+damages_fat = map(surges_fat) do surge
+    scenario = StochasticScenario(
+        surges=[surge], mean_sea_level=[0.0], discount_rate=0.0
+    )
+    outcome = simulate(config, scenario, baseline)
+    SimOptDecisions.value(outcome.damage)
+end
+mc_mean_fat = mean(damages_fat)
 ```
 
 **EAD mode:**
@@ -406,7 +424,8 @@ ead_scenario_fat = EADScenario(
     mean_sea_level=[0.0],
     discount_rate=0.0
 )
-# Your code here
+outcome_fat = simulate(ead_config, ead_scenario_fat, baseline)
+ead_fat = SimOptDecisions.value(outcome_fat.expected_damage)
 ```
 
 ```{julia}
@@ -446,7 +465,8 @@ ead_scenario_slr = EADScenario(
     mean_sea_level=[0.5],
     discount_rate=0.0
 )
-# Your code here
+outcome_slr = simulate(ead_config, ead_scenario_slr, baseline)
+ead_slr = SimOptDecisions.value(outcome_slr.expected_damage)
 ```
 
 ```{julia}
@@ -472,14 +492,29 @@ What does this tell you about the relationship between sea-level rise and flood 
 
 ### Experiment: Your City (from Wednesday)
 
-Use the city parameters you estimated on Wednesday to create a custom configuration.
-Fill in your city's values for `H_city`, `D_city`, `W_city`, and `H_seawall`, then run EAD to compare against Manhattan.
+Now it's your turn — use the city parameters you estimated on Wednesday.
+Replace the placeholder values for `H_city`, `D_city`, `W_city`, and `H_seawall` with your city's values, then run EAD to compare against Manhattan.
 
 See the [ICOW parameter documentation](https://dossgollin-lab.github.io/ICOW.jl/equations.html#parameters) for the full list of parameters you can change — try adjusting others beyond the four listed here.
 
 ```{julia}
 #| output: false
-# Your code here
+my_config = StochasticConfig(
+    H_city=10.0,
+    D_city=1500.0,
+    W_city=30000.0,
+    H_seawall=1.0
+)
+my_ead_config = EADConfig(
+    n_years=1,
+    integrator=QuadratureIntegrator(rtol=1e-6),
+    H_city=my_config.H_city,
+    D_city=my_config.D_city,
+    W_city=my_config.W_city,
+    H_seawall=my_config.H_seawall
+)
+outcome_my = simulate(my_ead_config, ead_scenario, baseline)
+ead_my = SimOptDecisions.value(outcome_my.expected_damage)
 ```
 
 ```{julia}
