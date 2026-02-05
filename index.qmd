@@ -70,12 +70,9 @@ This is the same hazard-damage convolution from Lab 2, but applied to a realisti
    cd lab-04-S26-yourusername
    ```
 
-3. **Install packages** (takes 10-15 minutes):
-   ```bash
-   julia --project=. -e 'using Pkg; Pkg.instantiate()'
-   ```
+3. **Open the notebook** in VS Code or Quarto preview
 
-4. **Open the notebook** in VS Code or Quarto preview
+4. **Run the first code cell** — it will automatically install any missing packages (this may take 10-15 minutes the first time)
 
 ::: {.callout-important}
 **Submission:** You will render this notebook to PDF and submit the PDF to Canvas.
