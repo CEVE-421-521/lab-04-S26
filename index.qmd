@@ -97,9 +97,12 @@ for url in [
     "https://github.com/dossgollin-lab/SimOptDecisions",
 ]
     pkg = replace(basename(url), ".jl" => "")
-    haskey(Pkg.project().dependencies, pkg) || Pkg.add(; url)
+    try
+        Base.require(Main, Symbol(pkg))  # check if it actually loads
+    catch
+        Pkg.add(; url)
+    end
 end
-Pkg.instantiate()
 
 using SimOptDecisions
 using ICOW
