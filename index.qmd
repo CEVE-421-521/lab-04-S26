@@ -86,12 +86,28 @@ See @sec-submission for details.
 
 ### Load Packages
 
+First, we load custom packages that have been developed for this class.
+If we're going to run into issues, it's likely here, hence the slightly complex package loading code
+
 ```{julia}
 #| output: false
+import Pkg
+for url in [
+    "https://github.com/dossgollin-lab/ICOW.jl",
+    "https://github.com/dossgollin-lab/SimOptDecisions",
+]
+    pkg = replace(basename(url), ".jl" => "")
+    haskey(Pkg.project().dependencies, pkg) || Pkg.add(; url)
+end
+Pkg.instantiate()
+
+using SimOptDecisions
 using ICOW
 using ICOW.Stochastic
 using ICOW.EAD
-using SimOptDecisions
+```
+
+```{julia}
 using CairoMakie
 using Distributions
 using Random
