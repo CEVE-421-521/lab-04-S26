@@ -108,9 +108,10 @@ catch
     end
     Pkg.add(; url="https://github.com/dossgollin-lab/SimOptDecisions")
     Pkg.add(; url="https://github.com/dossgollin-lab/ICOW.jl")
+    Pkg.instantiate()
+    using SimOptDecisions
+    using ICOW
 end
-using SimOptDecisions
-using ICOW
 using ICOW.Stochastic
 using ICOW.EAD
 ```
